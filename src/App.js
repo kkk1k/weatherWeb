@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import "./App.css";
 import WeatherBox from "./component/WeatherBox";
 import WeatherButton from "./component/WeatherButton";
+import ClipLoader from "react-spinners/ClipLoader";
 function App() {
   const cities = ["paris", "kyoto", "hawaii", "new york"];
   const [weather, setWeather] = useState(null);
   const [city, setCity] = useState("");
   const [loading, setLoading] = useState(true);
+  const [apiError, setAPIError] = useState("");
   const getCurrentLocation = () => {
     return navigator.geolocation.getCurrentPosition((position) => {
       let lat = position.coords.latitude;
@@ -16,18 +18,26 @@ function App() {
   };
 
   const fetchData = async (lat, lon) => {
-    let url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=ae9c3b9ec9dd73a7ac8bf677efc9071d&units=metric`;
-    let res = await fetch(url);
-    let data = await res.json();
-    setWeather(data);
-    setLoading(false);
+    try {
+      let url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=ae9c3b9ec9dd73a7ac8bf677efc9071d&units=metric`;
+      setLoading(true);
+      let res = await fetch(url);
+      let data = await res.json();
+      setWeather(data);
+      setLoading(false);
+    } catch (err) {
+      setAPIError(err.message);
+      setLoading(false);
+    }
   };
 
   const getWeatherByCity = async () => {
     let url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=ae9c3b9ec9dd73a7ac8bf677efc9071d&units=metric`;
+    setLoading(true);
     let res = await fetch(url);
     let data = await res.json();
     setWeather(data);
+    setLoading(false);
   };
   useEffect(() => {
     if (city === "") {
@@ -36,27 +46,24 @@ function App() {
       getWeatherByCity();
     }
   }, [city]);
-  // useEffect(()=>{
-  //   getWeatherByCity();
-  // },[city] )
-  // useEffect(()=>{
-  //   getCurrentLocation();
-  // },[] )
+
   return (
     <div>
       <div className="container">
         {loading ? (
-          <div>
-            <h1>loading...</h1>
-            <div class="absolute right-1/2 bottom-1/2  transform translate-x-1/2 translate-y-1/2 ">
-              <div class="border-t-transparent border-solid animate-spin  rounded-full border-blue-400 border-8 h-64 w-64"></div>
-            </div>
-          </div>
-        ) : (
+          <ClipLoader
+            color="#f88c6b"
+            size={150}
+            aria-label="Loading Spinner"
+            data-testid="loader"
+          />
+        ) : !apiError ? (  
           <div>
             <WeatherBox weather={weather} />
             <WeatherButton cities={cities} setCity={setCity} />
           </div>
+        ) : (
+          apiError
         )}
       </div>
     </div>
